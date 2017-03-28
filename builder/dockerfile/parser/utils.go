@@ -21,13 +21,11 @@ func (node *Node) Dump() string {
 		str += "(" + n.Dump() + ")\n"
 	}
 
-	if node.Next != nil {
-		for n := node.Next; n != nil; n = n.Next {
-			if len(n.Children) > 0 {
-				str += " " + n.Dump()
-			} else {
-				str += " " + strconv.Quote(n.Value)
-			}
+	for n := node.Next; n != nil; n = n.Next {
+		if len(n.Children) > 0 {
+			str += " " + n.Dump()
+		} else {
+			str += " " + strconv.Quote(n.Value)
 		}
 	}
 
@@ -36,7 +34,7 @@ func (node *Node) Dump() string {
 
 // performs the dispatch based on the two primal strings, cmd and args. Please
 // look at the dispatch table in parser.go to see how these dispatchers work.
-func fullDispatch(cmd, args string) (*Node, map[string]bool, error) {
+func fullDispatch(cmd, args string, d *Directive) (*Node, map[string]bool, error) {
 	fn := dispatch[cmd]
 
 	// Ignore invalid Dockerfile instructions
@@ -44,7 +42,7 @@ func fullDispatch(cmd, args string) (*Node, map[string]bool, error) {
 		fn = parseIgnore
 	}
 
-	sexp, attrs, err := fn(args)
+	sexp, attrs, err := fn(args, d)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -118,7 +116,7 @@ func extractBuilderFlags(line string) (string, []string, error) {
 				return line[pos:], words, nil
 			}
 
-			phase = inWord // found someting with "--", fall through
+			phase = inWord // found something with "--", fall through
 		}
 		if (phase == inWord || phase == inQuote) && (pos == len(line)) {
 			if word != "--" && (blankOK || len(word) > 0) {
